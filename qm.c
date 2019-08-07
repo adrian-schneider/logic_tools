@@ -338,12 +338,14 @@ int main(int argc, char *argv[])
 {
   int i,j,k,l,m,n,x,y,LogicProbe;
   int verbose=1;
+  int outformat=0; // simple format
  
   /***********Preparation. Collect the information for the boolean expression***********/
 
   if(argc>1)
   {
     verbose=0;
+    outformat=1;
     int err=ReadParamsFile(argv[1]);
     if(err<0)
     {
@@ -694,18 +696,51 @@ int main(int argc, char *argv[])
 
   if(verbose)
     printf("The simplified SOP expression is:\n");
- 
-  for(x=0;x<NumberOfEPI;x++)
+
+  if(outformat==0) // Output in simple default format.
   {
-    for(y=0;y<NumberOfVariable;y++)
+    for(x=0;x<NumberOfEPI;x++)
     {
-      if(Column[EPI_Index[x][0]][EPI_Index[x][1]][EPI_Index[x][2]][y]==1)
-        printf("%c",65+y);
-      else if(Column[EPI_Index[x][0]][EPI_Index[x][1]][EPI_Index[x][2]][y]==0)
-        printf("%c'",65+y);
+      for(y=0;y<NumberOfVariable;y++)
+      {
+        int index = Column[EPI_Index[x][0]][EPI_Index[x][1]][EPI_Index[x][2]][y];
+        if(index==1)
+          printf("%c",65+y);
+        else if(index==0)
+          printf("%c'",65+y);
+      }
+      if(x<NumberOfEPI-1)
+        printf(" + ");
     }
-    if(x<NumberOfEPI-1)
-      printf(" + ");
+  }
+  else // Output in a verilog compatible format.
+  {
+    for(x=0;x<NumberOfEPI;x++)
+    {
+      printf("(");
+      int first=1;
+      for(y=0;y<NumberOfVariable;y++)
+      {
+        int index = Column[EPI_Index[x][0]][EPI_Index[x][1]][EPI_Index[x][2]][y];
+        if(index==1)
+        {
+          if(! first) printf(" & ");
+          printf("%c",65+y);
+          first=0;
+        }
+        else if(index==0)
+        {
+          if(! first) printf(" & ");
+          printf("~%c",65+y);
+          first=0;
+        }
+      }
+      printf(")");
+      if(x<NumberOfEPI-1)
+      {
+        printf(" | ");
+      }
+    }
   }
 
   printf("\n");
