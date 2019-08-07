@@ -5,7 +5,7 @@ use warnings;
 use File::Spec::Functions qw/canonpath/;
 
 my $in_file_name = $ARGV[-1];
-my $f_debug = 0;
+my $f_debug = 1;
 
 my @seg_list = ();
 
@@ -44,30 +44,30 @@ sub read_seg_file {
     if ($line =~ /.(.).\.(.+)/) {
       $state = 0;
       $pos0 = $-[0]; # start position of the match.
-      ($seg_a, $seg_b, $seg_c, $seg_d, $seg_e, $seg_f, $seg_g) = ('', '', '', '', '', h_bar($1), '');
+      ($seg_a, $seg_b, $seg_c, $seg_d, $seg_e, $seg_f, $seg_g) = (h_bar($1), '', '', '', '', '', '');
       $code = $2;
-      $segbin = non_empty($1) << 5;
+      $segbin = non_empty($1);
       next;
     }
 
     if (($state == 0) && ($line =~ /\s{$pos0}(.?)(.?)(.?)/)) {
       $state = 1;
-      ($seg_e, $seg_g, $seg_a) = (v_bar($1), h_bar($2), v_bar($3));
-      $segbin += (non_empty($1) << 4) + (non_empty($2) << 6) + non_empty($3);
+      ($seg_f, $seg_g, $seg_b) = (v_bar($1), h_bar($2), v_bar($3));
+      $segbin += (non_empty($1) << 5) + (non_empty($2) << 6) + (non_empty($3) << 1);
       next; 
     }
 
     if (($state == 1) && ($line =~ /\s{$pos0}(.?)(.?)(.?)/)) {
       $state = -1;
-      ($seg_d, $seg_c, $seg_b) = (v_bar($1), h_bar($2), v_bar($3));
-      $segbin += (non_empty($1) << 3) + (non_empty($2) << 2) + (non_empty($3) << 1);
+      ($seg_e, $seg_d, $seg_c) = (v_bar($1), h_bar($2), v_bar($3));
+      $segbin += (non_empty($1) << 4) + (non_empty($2) << 3) + (non_empty($3) << 2);
   
       $seg_list[$code] = $segbin;
 
       if ($f_debug) {
-        print("   $seg_f  $code\n");
-        print("  $seg_e$seg_g$seg_a\n");  
-        print("  $seg_d$seg_c$seg_b\n");
+        print("   $seg_a  $code\n");
+        print("  $seg_f$seg_g$seg_b\n");  
+        print("  $seg_e$seg_d$seg_c\n");
         printf("  %08b\n", $segbin);  
       }
     }
