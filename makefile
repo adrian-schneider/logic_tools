@@ -1,5 +1,5 @@
 qm: qm.c
-	cc -oqm -lm qm.c
+	CC -oqm -lm qm.cpp
 
 test:
 	./qm xor.txt

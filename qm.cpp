@@ -472,28 +472,28 @@ int main(int argc, char *argv[])
 
                   Column[i+1][j][m][NumberOfVariable+3+i]=Column[i][j][k][NumberOfVariable+2+i];
 
-				  for (n = NumberOfVariable + 4 + i; n < NumberOfVariable + 4 + i + ipow(2, i + 1); n++)
+	          for (n = NumberOfVariable + 4 + i; n < NumberOfVariable + 4 + i + ipow(2, i + 1); n++)
                     Column[i+1][j][m][n]=0;
 
-				  position = int(
-				    log(double(
-					  (Column[i][j + 1][l][NumberOfVariable + 2 + i] -
-					  Column[i][j][k][NumberOfVariable + 2 + i])
-					)) / log(2)
-				  );
+                  position = int(
+                    log(double(
+ 	              (Column[i][j + 1][l][NumberOfVariable + 2 + i] -
+ 	              Column[i][j][k][NumberOfVariable + 2 + i])
+ 	            )) / log(2)
+                  );
 
                   Column[i+1][j][m][NumberOfVariable-1-position]=2;
                   Column[i+1][j][m][NumberOfVariable+1]=0;
                   Column[i+1][j][m][NumberOfVariable+2+i]=position;
 
-				  for (p = 0; p < ipow(2, i); p++)
+                  for (p = 0; p < ipow(2, i); p++)
                   {
                     Column[i+1][j][m][NumberOfVariable+4+i+p]=Column[i][j][k][NumberOfVariable+3+i+p];
                   }
 
-				  for (p = ipow(2, i); p < ipow(2, i + 1); p++)
+                  for (p = ipow(2, i); p < ipow(2, i + 1); p++)
                   {
-				    Column[i + 1][j][m][NumberOfVariable + 4 + i + p] = Column[i][j + 1][l][NumberOfVariable + 3 + i + p - (int)ipow(2, i)];
+                    Column[i + 1][j][m][NumberOfVariable + 4 + i + p] = Column[i][j + 1][l][NumberOfVariable + 3 + i + p - (int)ipow(2, i)];
                   }
  
                   m++;
@@ -768,7 +768,7 @@ int main(int argc, char *argv[])
 
 int ipow(double x, double y)
 {
-	return int(pow(x, y));
+  return int(pow(x, y));
 }
 
 
