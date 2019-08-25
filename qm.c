@@ -13,9 +13,13 @@
 // Added option to read parameters from a file.
 // Added a small garbage collector to free allocated memory.
 //
-// TODO: Occasionally, memory chunks of size zero are allocated.
-//       malloc is allowed to return NULL in such a case, which
-//       would be interpreted as an out of memory error.
+// Occasionally, memory chunks of size zero are requested.
+// malloc is allowed to return NULL in such a case, which
+// would be interpreted as an out of memory error.
+
+#ifdef _WIN32
+#define _CRT_SECURE_NO_WARNINGS
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,8 +56,8 @@ int OneCounter(int *binary, int NumberOfDigit);
 int Combination(int n, int ColumnNo, int k);
 int IsPowerOfTwo(int n);
 int IsDontCare(int MT);
-void ShowResult();
 void Recursion_For_Loop(int m);
+int ipow(double x, double y);
 
 #define ERR_UNDEF -99 // Undefined error
 #define ERR_PMEOF -20 // Premature end of file
@@ -81,7 +85,7 @@ void *gc_malloc(size_t size)
   if(iptr==0)
   {
     if(GC_DEBUG) fprintf(stderr, "gc initialize ptrs for %d.\n",nptrs);
-    ptrs=malloc(nptrs*sizeof(void *));
+		ptrs = (void**)malloc(nptrs * sizeof(void*));
     if(ptrs==NULL)
     {
       exit(ERR_NOMEM);
@@ -91,19 +95,27 @@ void *gc_malloc(size_t size)
   {
     if(GC_DEBUG) fprintf(stderr, "gc grow ptrs %d by %d.\n",nptrs,NPTRS);
     nptrs+=NPTRS;
-    ptrs=realloc(ptrs,nptrs*sizeof(void *));
-    if(ptrs==NULL)
+		void* pnew = realloc(ptrs, nptrs * sizeof(void*));
+		if (pnew != NULL)
     {
+			ptrs = (void**)pnew;
+		}
+		else
+		{
       exit(ERR_NOMEM);
     }
   }
-  void *pp=malloc(size);
+	void* pp = malloc((size ? size : sizeof(int)));
   if(GC_DEBUG) fprintf(stderr,"gc malloc size %ld at index %d\n",size,iptr);
   if(pp==NULL)
   {
     exit(ERR_NOMEM);
   }
-  return ptrs[iptr++]=pp;
+	if (ptrs != NULL)
+	{
+		ptrs[iptr++] = pp;
+	}
+	return pp;
 }
 
 
@@ -152,7 +164,7 @@ int ReadParamsFile(char *fname)
     err=ERR_PMEOF;
     goto errorexit;
   }
-  if(NumberOfAllMinterm>pow(2,NumberOfVariable) || NumberOfAllMinterm<=0)
+  if (NumberOfAllMinterm > ipow(2, NumberOfVariable) || NumberOfAllMinterm <= 0)
   {
     printf("The number of minterms cannot be greater than 2^%d nor smaller than 1.\n",NumberOfVariable);
     err=ERR_MTINV;
@@ -190,9 +202,9 @@ int ReadParamsFile(char *fname)
       err=ERR_MTORD;
       goto errorexit;
     }
-    else if(MintermIndicesDecimal[i]>=pow(2,NumberOfVariable))
+	else if (MintermIndicesDecimal[i] >= ipow(2, NumberOfVariable))
     {
-      printf("The number should be smaller than %f.\n",pow(2,NumberOfVariable));
+	  printf("The number should be smaller than %d.\n", ipow(2, NumberOfVariable));
       err=ERR_MTVAL;
       goto errorexit;
     }
@@ -214,9 +226,9 @@ int ReadParamsFile(char *fname)
         err=ERR_DCORD;
         goto errorexit;
       }
-      else if(MintermIndicesDecimal_DontCare[i]>=pow(2,NumberOfVariable))
+	  else if (MintermIndicesDecimal_DontCare[i] >= ipow(2, NumberOfVariable))
       {
-        printf("The number should be smaller than %f.\n",pow(2,NumberOfVariable));
+	    printf("The number should be smaller than %d.\n", ipow(2, NumberOfVariable));
         err=ERR_DCORD;
         goto errorexit;
       }
@@ -231,7 +243,7 @@ errorexit:
   {
     printf("Premature end of file '%s'.\n",fname);
   }
-  fclose(inf);
+  if (inf != 0) fclose(inf);
   gc_free();
   return err;
 }
@@ -243,34 +255,34 @@ void ReadParamsInteractive()
 
   printf("Please provide the information for the sum of minterms.\n\nHow many variables does it contain?\n");
 
-  scanf("%d",&NumberOfVariable);
+  (void)scanf("%d", &NumberOfVariable);
 
   while(NumberOfVariable<=0)
   {
     printf("The number of variables should be greater than 0, please enter again:\n\n");
     printf("Please provide the information for the sum of minterms.\n\nHow many variables does it contain?\n");
-    scanf("%d",&NumberOfVariable);
+	(void)scanf("%d", &NumberOfVariable);
   }
 
   printf("How many minterms (including Don't-Care minterms) does it contain?\n");
 
-  scanf("%d",&NumberOfAllMinterm);
-  while(NumberOfAllMinterm>pow(2,NumberOfVariable) || NumberOfAllMinterm<=0)
+  (void)scanf("%d", &NumberOfAllMinterm);
+  while (NumberOfAllMinterm > ipow(2, NumberOfVariable) || NumberOfAllMinterm <= 0)
   {
     printf("The number of minterms cannot be greater than 2^%d nor smaller than 1, please enter again:\n",NumberOfVariable);
     printf("How many minterms (including Don't-Care minterms) does it contain?\n");
-    scanf("%d",&NumberOfAllMinterm);
+	(void)scanf("%d", &NumberOfAllMinterm);
   }
 
   printf("How many Don't-Care minterms does it contain?\n");
 
-  scanf("%d",&NumberOfDontCare);
+  (void)scanf("%d", &NumberOfDontCare);
  
   while(NumberOfDontCare>=NumberOfAllMinterm || NumberOfDontCare<0)
   {
     printf("The number of Don't-Care minterms cannot be greater than the number of all minterms nor smaller than 0, please enter again:\n");
     printf("How many Don't-Care minterms does it contain?\n");
-    scanf("%d",&NumberOfDontCare);
+	(void)scanf("%d", &NumberOfDontCare);
   }
 
   MintermIndicesDecimal=(int *)gc_malloc(NumberOfAllMinterm*sizeof(int));
@@ -289,16 +301,16 @@ void ReadParamsInteractive()
     else
       printf("Please enter the decimal index of the %dth minterm(in ascending order):",i+1);
 
-    scanf("%d",&MintermIndicesDecimal[i]);
+	(void)scanf("%d", &MintermIndicesDecimal[i]);
 
     if(i!=0 && MintermIndicesDecimal[i]<=MintermIndicesDecimal[i-1])
     {
       printf("The numbers are not in ascending order, please re-enter all the indices again.\n\n");
       i=-1;
     }
-    else if(MintermIndicesDecimal[i]>=pow(2,NumberOfVariable))
+	else if (MintermIndicesDecimal[i] >= ipow(2, NumberOfVariable))
     {
-      printf("\nThe number should be smaller than %f, please re-enter all the indices again.\n\n",pow(2,NumberOfVariable));
+	  printf("\nThe number should be smaller than %d, please re-enter all the indices again.\n\n", ipow(2, NumberOfVariable));
       i=-1;
     }
   }
@@ -317,16 +329,16 @@ void ReadParamsInteractive()
       else
         printf("Please enter the decimal index of the %dth Don't-Care minterm (in ascending order):",i+1);
   
-      scanf("%d",&MintermIndicesDecimal_DontCare[i]);
+      (void)scanf("%d", &MintermIndicesDecimal_DontCare[i]);
    
       if(i!=0 && MintermIndicesDecimal_DontCare[i]<=MintermIndicesDecimal_DontCare[i-1])
       {
         printf("The numbers are not in ascending order, please re-enter all the indices again.\n\n");
         i=-1;
       }
-      else if(MintermIndicesDecimal_DontCare[i]>=pow(2,NumberOfVariable))
+	  else if (MintermIndicesDecimal_DontCare[i] >= ipow(2, NumberOfVariable))
       {
-        printf("\nThe number should be smaller than %f, please re-enter all the indices again.\n\n",pow(2,NumberOfVariable));
+	    printf("\nThe number should be smaller than %d, please re-enter all the indices again.\n\n", ipow(2, NumberOfVariable));
         i=-1;
       }
     }
@@ -361,7 +373,7 @@ int main(int argc, char *argv[])
 
   Minterm_Binary=(int **)gc_malloc(NumberOfAllMinterm*sizeof(int*));
 
-  for(i=0;i<=NumberOfAllMinterm;i++)
+  for (i = 0; i < NumberOfAllMinterm; i++)
   {
     Minterm_Binary[i]=(int *)gc_malloc((NumberOfVariable+4)*sizeof(int));
   }
@@ -451,7 +463,7 @@ int main(int argc, char *argv[])
                   Groupable=1;
                   Column[i][j][k][NumberOfVariable+1]=1;
                   Column[i][j+1][l][NumberOfVariable+1]=1;
-                  Column[i+1][j][m]=(int *)gc_malloc((NumberOfVariable+4+i+pow(2,i+1))*sizeof(int));
+				  Column[i + 1][j][m] = (int*)gc_malloc((NumberOfVariable + 4 + i + ipow(2, i + 1)) * sizeof(int));
 
                   for(n=0;n<=NumberOfVariable+1+i;n++)
                   {
@@ -460,24 +472,28 @@ int main(int argc, char *argv[])
 
                   Column[i+1][j][m][NumberOfVariable+3+i]=Column[i][j][k][NumberOfVariable+2+i];
 
-                  for(n=NumberOfVariable+4+i;n<NumberOfVariable+4+i+pow(2,i+1);n++)
+				  for (n = NumberOfVariable + 4 + i; n < NumberOfVariable + 4 + i + ipow(2, i + 1); n++)
                     Column[i+1][j][m][n]=0;
 
-                  position=log((Column[i][j+1][l][NumberOfVariable+2+i]-
+				  position = int(
+				    log(double(
+					  (Column[i][j + 1][l][NumberOfVariable + 2 + i] -
+					  Column[i][j][k][NumberOfVariable + 2 + i])
+					)) / log(2)
+				  );
 
-                  Column[i][j][k][NumberOfVariable+2+i]))/log(2);
                   Column[i+1][j][m][NumberOfVariable-1-position]=2;
                   Column[i+1][j][m][NumberOfVariable+1]=0;
                   Column[i+1][j][m][NumberOfVariable+2+i]=position;
 
-                  for(p=0;p<pow(2,i);p++)
+				  for (p = 0; p < ipow(2, i); p++)
                   {
                     Column[i+1][j][m][NumberOfVariable+4+i+p]=Column[i][j][k][NumberOfVariable+3+i+p];
                   }
 
-                  for(p=pow(2,i);p<pow(2,i+1);p++)
+				  for (p = ipow(2, i); p < ipow(2, i + 1); p++)
                   {
-                    Column[i+1][j][m][NumberOfVariable+4+i+p]=Column[i][j+1][l][NumberOfVariable+3+i+p-(int)pow(2,i)];
+				    Column[i + 1][j][m][NumberOfVariable + 4 + i + p] = Column[i][j + 1][l][NumberOfVariable + 3 + i + p - (int)ipow(2, i)];
                   }
  
                   m++;
@@ -493,9 +509,9 @@ int main(int argc, char *argv[])
 
   /***********NumberCounter count how many times each decimal index occurs***********/
 
-  NumberCounter=(int *)gc_malloc(pow(2,NumberOfVariable)*sizeof(int));
+  NumberCounter = (int*)gc_malloc(ipow(2, NumberOfVariable) * sizeof(int));
 
-  for(i=0;i<pow(2,NumberOfVariable);i++)
+  for (i = 0; i < ipow(2, NumberOfVariable); i++)
     NumberCounter[i]=0;
 
   /***********Record the Prime Implicants(duplicates will be removed)***********/
@@ -513,14 +529,14 @@ int main(int argc, char *argv[])
       {
         if(Column[i][j][k]!=NULL && Column[i][j][k][NumberOfVariable+1]==0)
         {
-          LogicProbe=0-pow(2,i);
+		  LogicProbe = 0 - ipow(2, i);
           /*LogicProbe is used to check whether this PI is a duplicate*/
           for(l=k-1;l>=0;l--)
             if(LogicProbe!=0)
             {
-              LogicProbe=0-pow(2,i);
-              for(m=0;m<pow(2,i);m++)
-                for(n=0;n<pow(2,i);n++)
+			  LogicProbe = 0 - ipow(2, i);
+			  for (m = 0; m < ipow(2, i); m++)
+			    for (n = 0; n < ipow(2, i); n++)
                   if(Column[i][j][l][NumberOfVariable+3+i+m]==Column[i][j][k][NumberOfVariable+3+i+n])
                   {
                     LogicProbe++;
@@ -533,7 +549,7 @@ int main(int argc, char *argv[])
             PI_Index[NumberOfPI][1]=j;
             PI_Index[NumberOfPI][2]=k;
             NumberOfPI++;
-            for(l=0;l<pow(2,i);l++)
+			for (l = 0; l < ipow(2, i); l++)
             {
               NumberCounter[Column[i][j][k][NumberOfVariable+3+i+l]]++;
             }
@@ -551,10 +567,10 @@ int main(int argc, char *argv[])
    the PIs which contain these minterms as EPIs and record them. Then set NumberCounter
    of this minterms to 0***********/
 
-  for(i=0;i<pow(2,NumberOfVariable);i++)
+  for (i = 0; i < ipow(2, NumberOfVariable); i++)
     if(NumberCounter[i]==1)
       for(j=0;j<NumberOfPI;j++)
-        for(k=0;k<pow(2,PI_Index[j][0]);k++)
+	    for (k = 0; k < ipow(2, PI_Index[j][0]); k++)
         {
           if(Column[PI_Index[j][0]]
                    [PI_Index[j][1]]
@@ -564,7 +580,7 @@ int main(int argc, char *argv[])
           {
             EPI_Index[NumberOfEPI]=PI_Index[j];
 
-            for(l=0;l<pow(2,PI_Index[j][0]);l++)
+			for (l = 0; l < ipow(2, PI_Index[j][0]); l++)
               NumberCounter[Column[PI_Index[j][0]]
                                   [PI_Index[j][1]]
                                   [PI_Index[j][2]]
@@ -572,14 +588,14 @@ int main(int argc, char *argv[])
               =0;
 
             NumberOfEPI++;
-            k=pow(2,PI_Index[j][0]);
+			k = ipow(2, PI_Index[j][0]);
           }
         }
 
   /***********Make the Reduced PI Chart***********/
 
   NumberOfRemainingMT=0;
-  for(i=0;i<pow(2,NumberOfVariable);i++)
+  for (i = 0; i < ipow(2, NumberOfVariable); i++)
     if(NumberCounter[i]!=0)
       NumberOfRemainingMT++;
 
@@ -597,7 +613,7 @@ int main(int argc, char *argv[])
 
   /***********This is the First Row, consist of the remaining minterms decimal indices***********/
 
-  for(i=0,j=0;j<pow(2,NumberOfVariable);j++)
+  for (i = 0, j = 0; j < ipow(2, NumberOfVariable); j++)
     if(NumberCounter[j]!=0)
     {
       ReducedPIChart_X[i]=j;
@@ -608,7 +624,7 @@ int main(int argc, char *argv[])
 
   NumberOfRemainingPI=0;
   for(i=0;i<NumberOfPI;i++)
-    for(j=0;j<pow(2,PI_Index[i][0]);j++)
+    for (j = 0; j < ipow(2, PI_Index[i][0]); j++)
     {
       if(NumberCounter[Column[PI_Index[i][0]]
                              [PI_Index[i][1]]
@@ -616,7 +632,7 @@ int main(int argc, char *argv[])
                              [NumberOfVariable+3+PI_Index[i][0]+j]]
          !=0)
       {
-        j=pow(2,PI_Index[i][0]);
+	    j = ipow(2, PI_Index[i][0]);
         ReducedPIChart_Y[NumberOfRemainingPI]=PI_Index[i];
         NumberOfRemainingPI++;
       }
@@ -635,7 +651,7 @@ int main(int argc, char *argv[])
         ReducedPIChart[i][j]=0;
 
     for(i=0;i<NumberOfRemainingPI;i++)
-      for(j=0;j<pow(2,ReducedPIChart_Y[i][0]);j++)
+	  for (j = 0; j < ipow(2, ReducedPIChart_Y[i][0]); j++)
         for(k=0;k<NumberOfRemainingMT;k++)
           if(Column[ReducedPIChart_Y[i][0]]
                    [ReducedPIChart_Y[i][1]]
@@ -750,11 +766,17 @@ int main(int argc, char *argv[])
 }
 
 
+int ipow(double x, double y)
+{
+	return int(pow(x, y));
+}
+
+
 int IsDontCare(int MT)
 {
   int i;
-  if(MT==MintermIndicesDecimal_DontCare[i])
-    for(i=0;i<NumberOfDontCare;i++)
+  for (i = 0; i < NumberOfDontCare; i++)
+    if (MT == MintermIndicesDecimal_DontCare[i])
       return 1;
   return 0;
 }

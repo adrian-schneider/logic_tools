@@ -511,8 +511,8 @@ int main()
 int IsDontCare(int MT)
 {
   int i;
-  if(MT==MintermIndicesDecimal_DontCare[i])
-    for(i=0;i<NumberOfDontCare;i++)
+  for(i=0;i<NumberOfDontCare;i++)
+    if(MT==MintermIndicesDecimal_DontCare[i])
       return 1;
   return 0;
 }
