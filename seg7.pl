@@ -27,6 +27,16 @@ sub h_bar {
 }
 
 
+sub printfile {
+  my $fname = shift;
+  open (my $fh, "<", $fname);
+  while (<$fh>) {
+    chomp;
+    print "$_\n";
+  }
+  close $fh;
+}
+
 sub read_seg_file {
   open(my $in_file, '<', $in_file_name) or die "Cannot open $in_file_name, $!";
 
@@ -108,8 +118,9 @@ sub write_minterm_files {
     close($out_file);
 
     print "-- segment $segchr\n";
-    #system("cat " . canonpath("$out_file_name"));
-    system("./qm " . canonpath("$out_file_name"));
+	#printfile($out_file_name);
+	my $cmd = canonpath("./qm") . " " . canonpath("$out_file_name");
+    system($cmd);
   }
   unlink($out_file_name);
 }
